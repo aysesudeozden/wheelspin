@@ -1,40 +1,281 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
-function App() {
-  const [prizes, setPrizes] = useState([
-    { id: 1, name: 'Prize 1' },
-    { id: 2, name: 'Prize 2' },
-    { id: 3, name: 'Prize 3' },
-    { id: 4, name: 'Prize 4' },
-    { id: 5, name: 'Prize 5' },
-    { id: 6, name: 'Prize 6' },
-    { id: 7, name: 'Prize 7' },
-    { id: 8, name: 'Prize 8' },
-  ])
-  const [result, setResult] = useState('')
-  const spin = () => {
-    const randomIndex = Math.floor(Math.random() * prizes.length)
-    setResult(prizes[randomIndex].name)
-    prizes.splice(randomIndex, 1)
-    setPrizes([...prizes])
-  }
-  return (
-    <>
-      <h1>Wheelspin</h1>
-      <div className="wheel">
-        {prizes.map((prize) => (
-          <div key={prize.id} className="prize">
-            {prize.name}
-          </div>
-        ))}
-      </div>
-      <button onClick={() => spin()}>Spin</button>
-      <div className="result">
-        {result}
-      </div>
+interface Prize {
+  id: string;
+  name: string;
+  color: string;
+}
 
-    </>
+const COLORS = [
+  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', 
+  '#ec4899', '#f43f5e', '#ef4444', '#f97316', 
+  '#f59e0b', '#eab308', '#84cc16', '#22c55e', 
+  '#10b981', '#06b6d4', '#0ea5e9', '#3b82f6'
+];
+
+function App() {
+  const [prizes, setPrizes] = useState<Prize[]>([
+    { id: '1', name: 'MacBook Pro', color: COLORS[0] },
+    { id: '2', name: 'iPhone 15', color: COLORS[1] },
+    { id: '3', name: 'iPad Air', color: COLORS[2] },
+    { id: '4', name: 'AirPods Max', color: COLORS[3] },
+    { id: '5', name: 'Apple Watch', color: COLORS[4] },
+    { id: '6', name: 'Gift Card', color: COLORS[5] },
+  ]);
+  const [newPrizeName, setNewPrizeName] = useState('');
+  const [rotation, setRotation] = useState(0);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [winner, setWinner] = useState<Prize | null>(null);
+  const [isPopout, setIsPopout] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'wheel') {
+      setIsPopout(true);
+    }
+
+    // Sync state from opener if in popout
+    if (params.get('mode') === 'wheel' && window.opener) {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'SYNC_prizes') {
+          setPrizes(event.data.prizes);
+        }
+        if (event.data.type === 'START_SPIN') {
+          spin(event.data.prizes);
+        }
+      };
+      window.addEventListener('message', handleMessage);
+      window.opener.postMessage({ type: 'POPUP_READY' }, '*');
+      return () => window.removeEventListener('message', handleMessage);
+    }
+  }, []);
+
+  const addPrize = () => {
+    if (!newPrizeName.trim()) return;
+    const newPrize = {
+      id: Date.now().toString(),
+      name: newPrizeName,
+      color: COLORS[prizes.length % COLORS.length]
+    };
+    const updated = [...prizes, newPrize];
+    setPrizes(updated);
+    setNewPrizeName('');
+    
+    // Notify popout if exists
+    if (window.opener) {
+       // logic for bidirectional sync could go here
+    }
+  };
+
+  const removePrize = (id: string) => {
+    if (prizes.length <= 2) return;
+    setPrizes(prizes.filter(p => p.id !== id));
+  };
+
+  const spin = (currentPrizes = prizes) => {
+    if (isSpinning || currentPrizes.length === 0) return;
+    
+    setIsSpinning(true);
+    setWinner(null);
+
+    const extraRounds = 5 + Math.floor(Math.random() * 5);
+    const randomDegree = Math.floor(Math.random() * 360);
+    const newRotation = rotation + (extraRounds * 360) + randomDegree;
+    
+    setRotation(newRotation);
+
+    setTimeout(() => {
+      setIsSpinning(false);
+      const actualDegree = newRotation % 360;
+      const segmentSize = 360 / currentPrizes.length;
+      // The pointer is at the top (270 degrees in SVG coordinate space if 0 is right)
+      // But we rotate the ENTIRE wheel. 
+      // 0 rotation means the first segment starts from 0 (right) or wherever we draw it.
+      // Let's adjust logic based on SVG drawing.
+      const index = Math.floor(((360 - actualDegree + 270) % 360) / segmentSize);
+      setWinner(currentPrizes[index]);
+    }, 5000);
+  };
+
+  const popOut = () => {
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    const popup = window.open(
+      `${window.location.origin}${window.location.pathname}?mode=wheel`,
+      'WheelPopout',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+
+    if (popup) {
+      // Basic sync logic
+      setTimeout(() => {
+        popup.postMessage({ type: 'SYNC_prizes', prizes }, '*');
+      }, 1000);
+    }
+  };
+
+  const renderWheel = () => {
+    const segmentSize = 360 / prizes.length;
+    return (
+      <svg viewBox="0 0 100 100" className="wheel-svg" style={{ width: '100%', height: '100%' }}>
+        {prizes.map((prize, i) => {
+          const startAngle = i * segmentSize;
+          const endAngle = (i + 1) * segmentSize;
+          const x1 = 50 + 50 * Math.cos((Math.PI * startAngle) / 180);
+          const y1 = 50 + 50 * Math.sin((Math.PI * startAngle) / 180);
+          const x2 = 50 + 50 * Math.cos((Math.PI * endAngle) / 180);
+          const y2 = 50 + 50 * Math.sin((Math.PI * endAngle) / 180);
+          const largeArcFlag = segmentSize > 180 ? 1 : 0;
+          
+          return (
+            <g key={prize.id}>
+              <path
+                d={`M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                fill={prize.color}
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="0.5"
+              />
+              <text
+                x="75"
+                y="50"
+                fill="white"
+                fontSize="4"
+                fontWeight="bold"
+                textAnchor="middle"
+                transform={`rotate(${startAngle + segmentSize / 2}, 50, 50)`}
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+              >
+                {prize.name.length > 12 ? prize.name.substring(0, 10) + '...' : prize.name}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  };
+
+  if (isPopout) {
+    return (
+      <div className="container" style={{ padding: '1rem', minHeight: 'auto' }}>
+        <div className="wheel-section">
+          <div className="wheel-pointer"></div>
+          <div className="wheel-wrapper">
+            <div 
+              className="wheel-inner" 
+              style={{ transform: `rotate(${rotation}deg)` }}
+            >
+              {renderWheel()}
+            </div>
+            <div className="wheel-center">
+               <span style={{ fontSize: '20px' }}>🎯</span>
+            </div>
+          </div>
+          {winner && (
+            <div className="result-overlay">
+              <h2>Kazanan!</h2>
+              <span>{winner.name}</span>
+            </div>
+          )}
+          {!isSpinning && (
+            <button className="btn btn-primary spin-btn" onClick={() => spin()}>
+              ÇEVİR!
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container">
+      <header className="header">
+        <h1>Çarkıfelek</h1>
+        <p style={{ opacity: 0.6 }}>Kendi ödüllerini ekle ve şansını dene!</p>
+      </header>
+
+      <div className="main-layout">
+        <div className="wheel-section">
+          <div className="wheel-pointer"></div>
+          <div className="wheel-wrapper">
+            <div 
+              className="wheel-inner" 
+              style={{ transform: `rotate(${rotation}deg)` }}
+            >
+              {renderWheel()}
+            </div>
+            <div className="wheel-center" style={{ cursor: 'pointer' }} onClick={() => !isSpinning && spin()}>
+               <span style={{ fontSize: '24px' }}>{isSpinning ? '⏳' : '🎡'}</span>
+            </div>
+          </div>
+          
+          {winner && (
+            <div className="result-overlay">
+              <h2>Kazanan!</h2>
+              <span>{winner.name}</span>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button 
+              className="btn btn-primary spin-btn" 
+              onClick={() => spin()}
+              disabled={isSpinning || prizes.length === 0}
+            >
+              ŞİMDİ ÇEVİR!
+            </button>
+            <button className="btn btn-secondary" onClick={popOut} title="Ayrı Pencerede Aç">
+              <span>⧉</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="sidebar">
+          <h3>Ödül Listesi</h3>
+          <div className="prize-list">
+            {prizes.map((prize) => (
+              <div key={prize.id} className="prize-item">
+                <div 
+                  style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    borderRadius: '50%', 
+                    background: prize.color 
+                  }} 
+                />
+                <span style={{ flex: 1, textAlign: 'left' }}>{prize.name}</span>
+                <button 
+                  className="btn btn-danger" 
+                  onClick={() => removePrize(prize.id)}
+                  title="Sil"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="prize-input-group">
+            <input 
+              type="text" 
+              placeholder="Yeni ödül adı..." 
+              value={newPrizeName}
+              onChange={(e) => setNewPrizeName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addPrize()}
+            />
+            <button className="btn btn-primary" onClick={addPrize}>
+              Ekle
+            </button>
+          </div>
+          <p style={{ fontSize: '0.8rem', opacity: 0.5, marginTop: '1rem' }}>
+            En az 2 ödül olmalıdır.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 
