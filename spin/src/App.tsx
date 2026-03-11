@@ -8,20 +8,16 @@ interface Prize {
 }
 
 const COLORS = [
-  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', 
-  '#ec4899', '#f43f5e', '#ef4444', '#f97316', 
-  '#f59e0b', '#eab308', '#84cc16', '#22c55e', 
+  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+  '#ec4899', '#f43f5e', '#ef4444', '#f97316',
+  '#f59e0b', '#eab308', '#84cc16', '#22c55e',
   '#10b981', '#06b6d4', '#0ea5e9', '#3b82f6'
 ];
 
 function App() {
   const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', name: 'MacBook Pro', color: COLORS[0] },
-    { id: '2', name: 'iPhone 15', color: COLORS[1] },
-    { id: '3', name: 'iPad Air', color: COLORS[2] },
-    { id: '4', name: 'AirPods Max', color: COLORS[3] },
-    { id: '5', name: 'Apple Watch', color: COLORS[4] },
-    { id: '6', name: 'Gift Card', color: COLORS[5] },
+    { id: '1', name: 'Option1', color: COLORS[0] },
+    { id: '2', name: 'Option2', color: COLORS[1] },
   ]);
   const [newPrizeName, setNewPrizeName] = useState('');
   const [rotation, setRotation] = useState(0);
@@ -61,10 +57,10 @@ function App() {
     const updated = [...prizes, newPrize];
     setPrizes(updated);
     setNewPrizeName('');
-    
+
     // Notify popout if exists
     if (window.opener) {
-       // logic for bidirectional sync could go here
+      // logic for bidirectional sync could go here
     }
   };
 
@@ -75,14 +71,14 @@ function App() {
 
   const spin = (currentPrizes = prizes) => {
     if (isSpinning || currentPrizes.length === 0) return;
-    
+
     setIsSpinning(true);
     setWinner(null);
 
     const extraRounds = 5 + Math.floor(Math.random() * 5);
     const randomDegree = Math.floor(Math.random() * 360);
     const newRotation = rotation + (extraRounds * 360) + randomDegree;
-    
+
     setRotation(newRotation);
 
     setTimeout(() => {
@@ -103,7 +99,7 @@ function App() {
     const height = 700;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
-    
+
     const popup = window.open(
       `${window.location.origin}${window.location.pathname}?mode=wheel`,
       'WheelPopout',
@@ -130,7 +126,7 @@ function App() {
           const x2 = 50 + 50 * Math.cos((Math.PI * endAngle) / 180);
           const y2 = 50 + 50 * Math.sin((Math.PI * endAngle) / 180);
           const largeArcFlag = segmentSize > 180 ? 1 : 0;
-          
+
           return (
             <g key={prize.id}>
               <path
@@ -164,25 +160,25 @@ function App() {
         <div className="wheel-section">
           <div className="wheel-pointer"></div>
           <div className="wheel-wrapper">
-            <div 
-              className="wheel-inner" 
+            <div
+              className="wheel-inner"
               style={{ transform: `rotate(${rotation}deg)` }}
             >
               {renderWheel()}
             </div>
             <div className="wheel-center">
-               <span style={{ fontSize: '20px' }}>🎯</span>
+              <span style={{ fontSize: '20px' }}>🎯</span>
             </div>
           </div>
           {winner && (
             <div className="result-overlay">
-              <h2>Kazanan!</h2>
+              <h2>Winner!</h2>
               <span>{winner.name}</span>
             </div>
           )}
           {!isSpinning && (
             <button className="btn btn-primary spin-btn" onClick={() => spin()}>
-              ÇEVİR!
+              SPIN!
             </button>
           )}
         </div>
@@ -193,64 +189,63 @@ function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1>Çarkıfelek</h1>
-        <p style={{ opacity: 0.6 }}>Kendi ödüllerini ekle ve şansını dene!</p>
+        <h1>Wheel of Your Fortune</h1>
+        <p style={{ opacity: 0.6 }}>Choose your options and let the wheel decide!</p>
       </header>
 
       <div className="main-layout">
         <div className="wheel-section">
           <div className="wheel-pointer"></div>
           <div className="wheel-wrapper">
-            <div 
-              className="wheel-inner" 
+            <div
+              className="wheel-inner"
               style={{ transform: `rotate(${rotation}deg)` }}
             >
               {renderWheel()}
             </div>
             <div className="wheel-center" style={{ cursor: 'pointer' }} onClick={() => !isSpinning && spin()}>
-               <span style={{ fontSize: '24px' }}>{isSpinning ? '⏳' : '🎡'}</span>
+              <span style={{ fontSize: '24px' }}>{isSpinning ? '⏳' : '🎡'}</span>
             </div>
           </div>
-          
+
           {winner && (
             <div className="result-overlay">
-              <h2>Kazanan!</h2>
+              <h2>Winner!</h2>
               <span>{winner.name}</span>
             </div>
           )}
 
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <button 
-              className="btn btn-primary spin-btn" 
+            <button
+              className="btn btn-primary spin-btn"
               onClick={() => spin()}
               disabled={isSpinning || prizes.length === 0}
             >
-              ŞİMDİ ÇEVİR!
+              SPIN!
             </button>
-            <button className="btn btn-secondary" onClick={popOut} title="Ayrı Pencerede Aç">
+            <button className="btn btn-secondary" onClick={popOut} title="Open in new window">
               <span>⧉</span>
             </button>
           </div>
         </div>
 
         <div className="sidebar">
-          <h3>Ödül Listesi</h3>
           <div className="prize-list">
             {prizes.map((prize) => (
               <div key={prize.id} className="prize-item">
-                <div 
-                  style={{ 
-                    width: '12px', 
-                    height: '12px', 
-                    borderRadius: '50%', 
-                    background: prize.color 
-                  }} 
+                <div
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: prize.color
+                  }}
                 />
                 <span style={{ flex: 1, textAlign: 'left' }}>{prize.name}</span>
-                <button 
-                  className="btn btn-danger" 
+                <button
+                  className="btn btn-danger"
                   onClick={() => removePrize(prize.id)}
-                  title="Sil"
+                  title="Delete"
                 >
                   ✕
                 </button>
@@ -259,19 +254,19 @@ function App() {
           </div>
 
           <div className="prize-input-group">
-            <input 
-              type="text" 
-              placeholder="Yeni ödül adı..." 
+            <input
+              type="text"
+              placeholder="New option..."
               value={newPrizeName}
               onChange={(e) => setNewPrizeName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPrize()}
             />
             <button className="btn btn-primary" onClick={addPrize}>
-              Ekle
+              Add
             </button>
           </div>
           <p style={{ fontSize: '0.8rem', opacity: 0.5, marginTop: '1rem' }}>
-            En az 2 ödül olmalıdır.
+            At least 2 options required.
           </p>
         </div>
       </div>
