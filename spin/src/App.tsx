@@ -16,8 +16,8 @@ const COLORS = [
 
 function App() {
   const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', name: 'Option1', color: COLORS[0] },
-    { id: '2', name: 'Option2', color: COLORS[1] },
+    { id: '1', name: '', color: COLORS[0] },
+    { id: '2', name: '', color: COLORS[1] },
   ]);
   const [newPrizeName, setNewPrizeName] = useState('');
   const [rotation, setRotation] = useState(0);
@@ -48,20 +48,15 @@ function App() {
   }, []);
 
   const addPrize = () => {
-    if (!newPrizeName.trim()) return;
+    if (!newPrizeName) return;
     const newPrize = {
       id: Date.now().toString(),
       name: newPrizeName,
-      color: COLORS[prizes.length % COLORS.length]
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
     };
     const updated = [...prizes, newPrize];
     setPrizes(updated);
     setNewPrizeName('');
-
-    // Notify popout if exists
-    if (window.opener) {
-      // logic for bidirectional sync could go here
-    }
   };
 
   const removePrize = (id: string) => {
@@ -92,26 +87,6 @@ function App() {
       const index = Math.floor(((360 - actualDegree + 270) % 360) / segmentSize);
       setWinner(currentPrizes[index]);
     }, 5000);
-  };
-
-  const popOut = () => {
-    const width = 600;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    const popup = window.open(
-      `${window.location.origin}${window.location.pathname}?mode=wheel`,
-      'WheelPopout',
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-
-    if (popup) {
-      // Basic sync logic
-      setTimeout(() => {
-        popup.postMessage({ type: 'SYNC_prizes', prizes }, '*');
-      }, 1000);
-    }
   };
 
   const renderWheel = () => {
@@ -223,9 +198,6 @@ function App() {
             >
               SPIN!
             </button>
-            <button className="btn btn-secondary" onClick={popOut} title="Open in new window">
-              <span>⧉</span>
-            </button>
           </div>
         </div>
 
@@ -241,7 +213,15 @@ function App() {
                     background: prize.color
                   }}
                 />
-                <span style={{ flex: 1, textAlign: 'left' }}>{prize.name}</span>
+                <span style={{ flex: 1, textAlign: 'left' }}>
+                  <input
+                    type="text"
+                    placeholder="Option name"
+                    value={prize.name}
+                    onChange={(e) => prize.name = e.target.value}
+                    onKeyDown={(e) => e.key === 'Enter' && addPrize()}
+                  />
+                </span>
                 <button
                   className="btn btn-danger"
                   onClick={() => removePrize(prize.id)}
