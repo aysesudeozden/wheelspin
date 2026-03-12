@@ -231,9 +231,6 @@ function App() {
                 </button>
               </div>
             ))}
-          </div>
-
-          <div className="prize-input-group">
             <input
               type="text"
               placeholder="New option..."
@@ -241,7 +238,11 @@ function App() {
               onChange={(e) => setNewPrizeName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPrize()}
             />
-            <button className="btn btn-primary" onClick={addPrize}>
+
+          </div>
+
+          <div className="prize-input-group">
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={addPrize}>
               Add
             </button>
           </div>
