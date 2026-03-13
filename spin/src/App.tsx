@@ -213,14 +213,10 @@ function App() {
                     background: prize.color
                   }}
                 />
-                <span style={{ flex: 1, textAlign: 'left' }}>
-                  <input
-                    type="text"
-                    placeholder="Option name"
-                    value={prize.name}
-                    onChange={(e) => prize.name = e.target.value}
-                    onKeyDown={(e) => e.key === 'Enter' && addPrize()}
-                  />
+                <span>
+                  <div className="input-2">
+                    {prize.name}
+                  </div>
                 </span>
                 <button
                   className="btn btn-danger"
@@ -234,11 +230,11 @@ function App() {
             <input
               type="text"
               placeholder="New option..."
+              className="input"
               value={newPrizeName}
               onChange={(e) => setNewPrizeName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPrize()}
             />
-
           </div>
 
           <div className="prize-input-group">

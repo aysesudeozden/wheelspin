@@ -158,6 +158,14 @@ input:focus {
   border-color: #60a5fa;
 }
 
+.input-2 {
+  flex: 1;
+  color: white;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .btn {
   font-family: inherit;
   font-weight: 600;
