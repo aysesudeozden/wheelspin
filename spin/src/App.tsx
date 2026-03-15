@@ -16,22 +16,16 @@ const COLORS = [
 
 function App() {
   const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', name: '', color: COLORS[0] },
-    { id: '2', name: '', color: COLORS[1] },
+    { id: '1', name: 'Option 1', color: COLORS[0] },
+    { id: '2', name: 'Option 2', color: COLORS[1] },
   ]);
   const [newPrizeName, setNewPrizeName] = useState('');
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [winner, setWinner] = useState<Prize | null>(null);
-  const [isPopout, setIsPopout] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('mode') === 'wheel') {
-      setIsPopout(true);
-    }
-
-    // Sync state from opener if in popout
     if (params.get('mode') === 'wheel' && window.opener) {
       const handleMessage = (event: MessageEvent) => {
         if (event.data.type === 'SYNC_prizes') {
@@ -42,7 +36,6 @@ function App() {
         }
       };
       window.addEventListener('message', handleMessage);
-      window.opener.postMessage({ type: 'POPUP_READY' }, '*');
       return () => window.removeEventListener('message', handleMessage);
     }
   }, []);
@@ -80,10 +73,6 @@ function App() {
       setIsSpinning(false);
       const actualDegree = newRotation % 360;
       const segmentSize = 360 / currentPrizes.length;
-      // The pointer is at the top (270 degrees in SVG coordinate space if 0 is right)
-      // But we rotate the ENTIRE wheel. 
-      // 0 rotation means the first segment starts from 0 (right) or wherever we draw it.
-      // Let's adjust logic based on SVG drawing.
       const index = Math.floor(((360 - actualDegree + 270) % 360) / segmentSize);
       setWinner(currentPrizes[index]);
     }, 5000);
@@ -128,38 +117,6 @@ function App() {
       </svg>
     );
   };
-
-  if (isPopout) {
-    return (
-      <div className="container" style={{ padding: '1rem', minHeight: 'auto' }}>
-        <div className="wheel-section">
-          <div className="wheel-pointer"></div>
-          <div className="wheel-wrapper">
-            <div
-              className="wheel-inner"
-              style={{ transform: `rotate(${rotation}deg)` }}
-            >
-              {renderWheel()}
-            </div>
-            <div className="wheel-center">
-              <span style={{ fontSize: '20px' }}>🎯</span>
-            </div>
-          </div>
-          {winner && (
-            <div className="result-overlay">
-              <h2>Winner!</h2>
-              <span>{winner.name}</span>
-            </div>
-          )}
-          {!isSpinning && (
-            <button className="btn btn-primary spin-btn" onClick={() => spin()}>
-              SPIN!
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container">
